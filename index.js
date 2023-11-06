@@ -10,6 +10,7 @@ process.on('uncaughtException', (err) => {
 const Discord = require("discord.js")
 const config = require("./config.json")
 const colors = require('colors');
+const readlineSync = require('readline-sync');
 
 const client = new Discord.Client({
   intents: [1, 512, 32768, 2, 128,
@@ -51,32 +52,23 @@ client.on('interactionCreate', (interaction) => {
 
 client.slashCommands = new Discord.Collection()
 
-require('./handler')(client)
-
 if (!config.token) {
-  const readline = require('readline');
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
+  console.log(colors.bgYellow(" warning "), colors.white("Or you can define your token in"), colors.grey("[config.json]"), colors.white("and the code will log in every time with this defined token"));
+  const token = readlineSync.question(colors.green("- Enter your bot token here: "), {
+    hideEchoBack: true, // Oculta a entrada do usuário
   });
 
-  console.log(colors.bgYellow(" warning "), colors.white("Or you can define your token in"), colors.grey("[ config.json ]"), colors.white("and the code will log in every time with this defined token"))
-  rl.question(colors.green("- Enter your bot token here: "), async (token) => {
-    config.token = token;
-    rl.close();
+  config.token = token;
 
-    try {
-      await client.login(token);
-    } catch (error) {
-      console.error(colors.red("Invalid token. Please provide a valid token."));
-    }
-  });
+  client.login(token).catch(async err => {
+    if (err.code === "TokenInvalid") return  console.error(colors.red("Invalid token. Please provide a valid token."));
+  })
 } else {
   client.login(config.token).catch(error => {
     if (error.code === "TokenInvalid") {
-      console.error(colors.red("Invalid token. Please provide a valid token."))
+      console.error(colors.red("Invalid token. Please provide a valid token."));
     }
-  })
+  });
 }
 
 const fs = require('fs');
